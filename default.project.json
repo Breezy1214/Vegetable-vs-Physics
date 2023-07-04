@@ -2,19 +2,25 @@
   "name": "Bouncy-Banana-Defense",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
-      "Common": {
+      "Shared": {
         "$path": "src/shared"
+      },
+      "Packages": {
+        "$path": "Packages"
+      },
+      "Controller": {
+        "$path": "src/controller"
       }
     },
-
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"
+      },
+      "Services": {
+        "$path": "src/services"
       }
     },
-
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
@@ -22,7 +28,6 @@
         }
       }
     },
-
     "Workspace": {
       "$properties": {
         "FilteringEnabled": true
@@ -60,7 +65,7 @@
         "Brightness": 2,
         "GlobalShadows": true,
         "Outlines": false,
-        "Technology": "Voxel"
+        "Technology": "ShadowMap"
       }
     },
     "SoundService": {
