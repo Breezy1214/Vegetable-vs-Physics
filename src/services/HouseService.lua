@@ -29,12 +29,12 @@ function HouseService:SetupPurchasePads(pad)
 		local player = Players:GetPlayerFromCharacter(character)
 		connection:Disconnect()
 		PurchaseHouse(player, pad.Parent)
+		pad.Parent = nil
 	end)
 end
 
 function PurchaseHouse(player, model)
 	local house = HouseClass.new(player, model)
-	print(house.owner)
 end
 
 function HouseService:KnitStart() end

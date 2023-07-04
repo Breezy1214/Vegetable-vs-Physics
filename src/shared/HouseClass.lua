@@ -3,14 +3,13 @@ HouseClass.__index = HouseClass
 local Cache = {}
 
 function HouseClass.GetHouseFromPlayer(player: Player)
-	
+	return Cache[player]
 end
 
 function HouseClass.new(player: Player, house: Model)
 	local self = setmetatable({}, HouseClass)
 	self.house = house
 	self.health = 100
-	self.model = house
 	self.owner = player
 
 	local billboardGui = Instance.new("BillboardGui")
@@ -34,7 +33,7 @@ function HouseClass.new(player: Player, house: Model)
 
 	local new
 	billboardGui.Parent = house.PrimaryPart
-	table.insert(Cache, self)
+	Cache[player] = self
 	return self
 end
 
@@ -52,8 +51,12 @@ end
 
 function HouseClass:Destroy()
 	self.model:Destroy()
-	table.remove(Cache, self)
-	print(Cache)
+
+	if Cache[self.owner] ~= nil then
+		Cache[self.owner] = nil
+		print(Cache[self.owner])
+	end
+
 	setmetatable(self, nil)
 	table.clear(self)
 end
