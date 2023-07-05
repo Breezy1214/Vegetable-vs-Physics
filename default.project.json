@@ -19,6 +19,9 @@
       },
       "Services": {
         "$path": "src/services"
+      },
+      "Classes": {
+        "$path": "src/classes"
       }
     },
     "StarterPlayer": {

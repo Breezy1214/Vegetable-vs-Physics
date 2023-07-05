@@ -1,9 +1,12 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local HouseClass = require(ReplicatedStorage.Shared.HouseClass)
+local House = require(ServerScriptService.Classes.House)
 local housePads = CollectionService:GetTagged("HousePad")
+
+local damagehousepart = workspace.DamageHouse
 
 local HouseService = Knit.CreateService({
 	Name = "HouseService",
@@ -34,9 +37,16 @@ function HouseService:SetupPurchasePads(pad)
 end
 
 function PurchaseHouse(player, model)
-	local house = HouseClass.new(player, model)
+	local house = House.new(player, model)
 end
 
-function HouseService:KnitStart() end
+function HouseService:KnitStart()
+	local clickDectector = Instance.new('ClickDetector')
+	clickDectector.MouseClick:Connect(function(playerWhoClicked)
+		local house = House.GetHouseFromPlayer(playerWhoClicked)
+		house:Damage(10)
+	end)
+	clickDectector.Parent = damagehousepart
+end
 
 return HouseService
