@@ -1,35 +1,52 @@
+-- Import services
 local PathfindingService = game:GetService("PathfindingService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 local TweenService = game:GetService("TweenService")
+
+-- Import external modules
 local janitor = require(ReplicatedStorage.Packages.janitor)
+
+-- Define enemy module
 local Enemy = {}
 Enemy.__index = Enemy
 
-local function followPath(destination) end
-
-function Enemy.new(model: Model, type: string, speed: IntValue, health: IntValue, isBoss: boolean)
+-- Enemy constructor
+function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: IntValue, isBoss: boolean)
 	local self = setmetatable({}, Enemy)
+
+	-- Initialize enemy properties
 	self.model = model
-	self.type = type
 	self.speed = speed
 	self.health = health
 	self.isBoss = isBoss or false
 	self.janitor = janitor.new()
-	self.waypoints = nil
-	self.nextWaypointIndex = nil
-	self.reachedConnection = nil
-	self.blockedConnection = nil
+	self.owner = house:GetPlayerFromHouse()
+	self.target = house
+	self.shouldDamageHouse = false
 
+	-- Add cleanup function
 	self.janitor:Add(function()
-		print(self.type .. "has been defeated")
+		self.model:Destroy()
+		self.shouldDamageHouse = false -- Stop damage coroutine
 		setmetatable(self, nil)
 		table.clear(self)
-		print("destroyed")
+		print("Enemy has been destroyed")
 	end, true)
 
 	return self
 end
 
+-- Function to spawn the enemy at the designated spawn point
+function Enemy:Spawn()
+	local spawnLocation = self.target.house.EnemySpawnPoints[self.model.Name]
+	self.model:PivotTo(CFrame.new(spawnLocation.Position))
+	self.model.Parent = workspace
+	warn("Enemy spawned")
+end
+
+-- Function to reduce the enemy's health by a certain amount of damage
 function Enemy:TakeDamage(damage)
 	self.health -= damage
 	if self.health <= 0 then
@@ -37,68 +54,47 @@ function Enemy:TakeDamage(damage)
 	end
 end
 
-function Enemy:ComputePath(destination)
-	local path = PathfindingService:CreatePath({
-		AgentRadius = 3,
-		AgentHeight = 6,
-		AgentCanJump = true,
-		Costs = {
-			Water = 20,
-		},
-	})
-
-	-- Compute the path
-	local success, errorMessage = pcall(function()
-		path:ComputeAsync(self.model.PrimaryPart.Position, destination)
-	end)
-
-	if success and path.Status == Enum.PathStatus.Success then
-		-- Get the path waypoints
-		self.waypoints = path:GetWaypoints()
-
-		-- Detect if path becomes blocked
-		self.blockedConnection = self.janitor:Add(
-			path.Blocked:Connect(function(blockedWaypointIndex)
-				-- Check if the obstacle is further down the path
-				if blockedWaypointIndex >= self.nextWaypointIndex then
-					-- Stop detecting path blockage until path is re-computed
-					self.janitor:Remove("BlockedConnection")
-					-- Call function to re-compute new path
-					self:ComputePath(destination)
-				end
-			end),
-			"Disconnect",
-			"BlockedConnection"
-		)
-
-		-- Detect when movement to next waypoint is complete
-		if not self.reachedConnection then
-			self.reachedConnection = humanoid.MoveToFinished:Connect(function(reached)
-				if reached and self.nextWaypointIndex < #self.waypoints then
-					-- Increase waypoint index and move to next waypoint
-					self.nextWaypointIndex += 1
-					humanoid:MoveTo(self.waypoints[self.nextWaypointIndex].Position)
-				else
-                    self.janitor:RemoveList('BlockedConnection', 'ReachedConnection')
-				end
-			end)
+-- Coroutine to damage the house every 3 seconds while the enemy is alive
+function Enemy:DamageHouse()
+	self.shouldDamageHouse = true
+	task.defer(function()
+		while self and self.shouldDamageHouse and self.health > 0 do
+			self.target:Damage(1)
+			task.wait(3)
 		end
-
-		-- Initially move to second waypoint (first waypoint is path start; skip it)
-		self.nextWaypointIndex = 2
-		humanoid:MoveTo(self.waypoints[self.nextWaypointIndex].Position)
-	else
-		warn("Path not computed!", errorMessage)
-	end
+	end)
 end
 
-function Enemy:Move(destination)
-	------------------------------------
-	local info = TweenInfo.new(1)
-	local goal = { Position = x }
-	local tween = TweenService:Create()
+-- Function to move the enemy towards the end point using a tween
+function Enemy:Move()
+	local targetPosition = Vector3.new(
+		self.target.house.EnemyEndPoints[self.model.Name].Position.X,
+		self.model.PrimaryPart.Size.Y / 2,
+		self.target.house.EnemyEndPoints[self.model.Name].Position.Z
+	)
+	local tween = TweenService:Create(
+		self.model.PrimaryPart,
+		TweenInfo.new(self.speed, Enum.EasingStyle.Linear),
+		{ Position = targetPosition }
+	)
+	self.janitor:Add(tween, "Destroy", "CurrentTween")
+
+	-- Connection to respond to the completion of the tween and start damaging the house
+	self.janitor:Add(
+		tween.Completed:Connect(function(state)
+			if state ~= Enum.PlaybackState.Completed then
+				return
+			end
+
+			self:DamageHouse()
+		end),
+		"Disconnect"
+	)
+
+	tween:Play()
 end
 
+-- Function to destroy the enemy and clean up connections
 function Enemy:Destroy()
 	self.janitor:Destroy()
 end
