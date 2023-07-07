@@ -22,7 +22,7 @@ function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: In
 	self.health = health
 	self.isBoss = isBoss or false
 	self.janitor = janitor.new()
-	self.owner = house:GetPlayerFromHouse()
+	self.owner = house.owner
 	self.target = house
 	self.shouldDamageHouse = false
 

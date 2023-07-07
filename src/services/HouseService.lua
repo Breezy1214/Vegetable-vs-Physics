@@ -24,6 +24,7 @@ local HouseService = Knit.CreateService({
 -- Function to initialize HouseService
 function HouseService:KnitInit()
 	for _, pad in ipairs(housePads) do
+		pad:SetAttribute("IsOwned", false)
 		self:SetupPurchasePads(pad)
 	end
 end
@@ -31,9 +32,8 @@ end
 -- Function to set up purchase pads
 function HouseService:SetupPurchasePads(pad)
 	pad.Touched:Connect(function(hit)
-		
 		local humanoid = hit.Parent:FindFirstChildOfClass("Humanoid")
-		if not humanoid then
+		if not humanoid or pad:GetAttribute("IsOwned") then
 			return
 		end
 
@@ -42,12 +42,22 @@ function HouseService:SetupPurchasePads(pad)
 			return
 		end
 
+		pad:SetAttribute("IsOwned", true)
+
 		-- Purchase the house
 		self:PurchaseHouse(player, pad.Name)
-			:andThen(function()
+			:andThen(function(house)
+				house.house.Destroying:Connect(function()
+					pad:SetAttribute("IsOwned", false)
+					pad.Parent = workspace.PurchasePads
+				end)
+
 				pad.Parent = nil
 			end)
-			:catch(warn)
+			:catch(function(err)
+				warn(err)
+				pad:SetAttribute("IsOwned", false)
+			end)
 	end)
 end
 
@@ -63,11 +73,11 @@ function HouseService:PurchaseHouse(player, houseName)
 		end
 
 		-- Create a new house and start a new wave
-		House.new(player, houseFolder[houseName])
+		local house = House.new(player, houseFolder[houseName])
 		local wave = Wave.new(player)
 		wave:StartGame()
 
-		resolve()
+		resolve(house)
 	end)
 end
 
