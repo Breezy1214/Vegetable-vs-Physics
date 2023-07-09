@@ -14,7 +14,6 @@ local Promise = require(Knit.Util.Promise)
 -- Define constants
 local housePads = CollectionService:GetTagged("HousePad")
 local houseFolder = ServerStorage.Houses
-local damagehousepart = workspace.DamageHouse
 
 local HouseService = Knit.CreateService({
 	Name = "HouseService",
@@ -83,6 +82,7 @@ end
 
 -- Function to start HouseService
 function HouseService:KnitStart()
+	local damagehousepart = workspace.DamageHouse
 	local clickDectector = Instance.new("ClickDetector")
 	clickDectector.MouseClick:Connect(function(playerWhoClicked)
 		local house = House.GetHouseFromPlayer(playerWhoClicked)

@@ -26,6 +26,7 @@ function Wave.new(player)
 	self.janitor = Janitor.new()
 	self.player = player
 	self.house = House.GetHouseFromPlayer(player)
+	self.enemiesAlive = 0
 
 	-- Connection to handle house destruction
 	self.janitor:Add(
@@ -69,7 +70,10 @@ function Wave:SpawnEnemies(speed, health)
 			local enemy = Enemy.new(self.house, ServerStorage.Enemies.Vegetable:Clone(), speed, health)
 			enemy.model.Name = tostring(i)
 			enemy:Spawn()
-			table.insert(self.enemies, enemy)
+			self.enemiesAlive += 1
+			local id = #self.enemies + 1 -- Generate a unique id for each enemy
+			self.enemies[id] = enemy
+			self:OnEnemiesDefeated(enemy, id)
 
 			-- Delay the enemy's move if it's within the first 5 enemies
 			if i <= 5 then
@@ -90,8 +94,27 @@ function Wave:SpawnEnemies(speed, health)
 	end
 end
 
+function Wave:OnEnemiesDefeated(enemy, id)
+	enemy.model.Destroying:Connect(function()
+		if not self and not self.enemies and not self.enemiesAlive then
+			return
+		end
+
+		self.enemies[id] = nil
+		self.enemiesAlive -= 1
+
+		if self.enemiesAlive <= 0 then
+			self:NextWave()
+		end
+	end)
+end
+
 -- Function to start the next wave
 function Wave:NextWave()
+	if self.currentState == "ENDED" then
+		return
+	end
+
 	for i = 1, 3 do
 		print(i)
 		task.wait(1)
@@ -105,8 +128,5 @@ function Wave:NextWave()
 
 	self:SpawnEnemies(ENEMY_SPEED, health)
 end
-
--- Placeholder function, if needed for additional cleanup
-function Wave:Destroy() end
 
 return Wave
