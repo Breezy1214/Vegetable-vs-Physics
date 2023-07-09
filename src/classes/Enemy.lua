@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local TweenService = game:GetService("TweenService")
+local modelToEnemyMap = {}
 
 -- Import external modules
 local janitor = require(ReplicatedStorage.Packages.janitor)
@@ -11,6 +12,11 @@ local janitor = require(ReplicatedStorage.Packages.janitor)
 -- Define enemy module
 local Enemy = {}
 Enemy.__index = Enemy
+
+-- Function to perform a fast lookup in the modelToEnemyMap.
+function Enemy.GetEnemyFromPart(part)
+	return modelToEnemyMap[part.Parent]
+end
 
 -- Enemy constructor
 function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: IntValue, isBoss: boolean)
@@ -30,11 +36,13 @@ function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: In
 	self.janitor:Add(function()
 		self.model:Destroy()
 		self.shouldDamageHouse = false -- Stop damage coroutine
+		modelToEnemyMap[self.model] = nil
 		setmetatable(self, nil)
 		table.clear(self)
 		print("Enemy has been destroyed")
 	end, true)
 
+	modelToEnemyMap[self.model] = self
 	return self
 end
 
