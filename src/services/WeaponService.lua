@@ -6,10 +6,20 @@ local House = require(ServerScriptService.Classes.House)
 
 local WeaponService = Knit.CreateService({
 	Name = "WeaponService",
-	Client = {},
+	Client = {
+		CreateGuiSignal = Knit.CreateSignal(),
+	},
 })
 
-function WeaponService:KnitInit() end
+WeaponService.Weapons = { ["Boulder"] = 20 }
+
+function WeaponService:CreateGui(player)
+	self.Client.CreateGuiSignal:Fire(player)
+end
+
+function WeaponService.Client:GetWeaponList()
+	return self.Server.Weapons
+end
 
 function WeaponService:KnitStart()
 	local boulderSpawnPart = workspace.SpawnBoulder

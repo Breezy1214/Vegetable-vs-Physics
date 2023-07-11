@@ -33,14 +33,13 @@ function House.new(player, house)
 	self.janitor = Janitor.new()
 
 	-- Creating a health bar with BillboardGui
-	local billboardGui, backgroundFrame, healthFrame = self:CreateHealthBar()
+	self:CreateHealthBar()
 
 	self.janitor:Add(function()
 		self.house:Destroy()
 		self.HealthChanged:Destroy()
 		Cache[self.owner] = nil
 		setmetatable(self, nil)
-		print("house is destroyed")
 	end, true)
 
 	-- Hiding the enemy spawn and end points

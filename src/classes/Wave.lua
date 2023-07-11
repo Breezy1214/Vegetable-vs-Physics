@@ -13,7 +13,7 @@ local Wave = {}
 Wave.__index = Wave
 
 -- Constants
-local ENEMY_SPEED = 10
+local ENEMY_SPEED = 20
 
 -- Wave constructor
 function Wave.new(player)
@@ -87,10 +87,13 @@ function Wave:SpawnEnemies(speed, health)
 			else
 				enemy:Move()
 			end
-			task.wait(0.1)
+
+			-- Random delay between 1 and 3 seconds
+			local delayTime = math.random(1, 3)
+			task.wait(delayTime)
 		end
 
-		task.wait(2)
+		task.wait(5)
 	end
 end
 
@@ -124,7 +127,7 @@ function Wave:NextWave()
 	print("Wave " .. self.currentWave .. " is starting!")
 
 	-- Configure enemy properties
-	local health = self.currentWave * 100
+	local health = 100 -- might need to update this to match the wave for more difficulty later
 
 	self:SpawnEnemies(ENEMY_SPEED, health)
 end

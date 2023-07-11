@@ -3,10 +3,9 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 game:GetService("Players").PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(char)
-        task.wait(1)
+		task.wait(1)
 		for _, part in char:GetDescendants() do
 			if part:IsA("BasePart") then
-				print("passed")
 				part.CollisionGroup = "Player"
 			end
 		end

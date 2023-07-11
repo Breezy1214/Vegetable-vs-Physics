@@ -8,6 +8,7 @@ local modelToEnemyMap = {}
 
 -- Import external modules
 local janitor = require(ReplicatedStorage.Packages.janitor)
+local Signal = require(ReplicatedStorage.Packages.signal)
 
 -- Define enemy module
 local Enemy = {}
@@ -25,15 +26,21 @@ function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: In
 	-- Initialize enemy properties
 	self.model = model
 	self.speed = speed
-	self.health = health
+	self.maxHealth = health
+	self.health = self.maxHealth
 	self.isBoss = isBoss or false
 	self.janitor = janitor.new()
 	self.owner = house.owner
 	self.target = house
 	self.shouldDamageHouse = false
+	self.HealthChanged = Signal.new()
+
+	-- Creating a health bar with BillboardGui
+	self:CreateHealthBar()
 
 	-- Add cleanup function
 	self.janitor:Add(function()
+		self.HealthChanged:Destroy()
 		self.model:Destroy()
 		self.shouldDamageHouse = false -- Stop damage coroutine
 		modelToEnemyMap[self.model] = nil
@@ -44,6 +51,47 @@ function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: In
 
 	modelToEnemyMap[self.model] = self
 	return self
+end
+
+-- Function to create a health bar with BillboardGui
+function Enemy:CreateHealthBar()
+	local billboardGui = Instance.new("BillboardGui")
+	billboardGui.MaxDistance = 100
+	billboardGui.Size = UDim2.new(0, 100, 0, 10)
+	billboardGui.Adornee = self.model.PrimaryPart
+	billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+
+	local backgroundFrame = Instance.new("Frame")
+	backgroundFrame.BackgroundColor3 = Color3.fromRGB(115, 0, 0)
+	backgroundFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	backgroundFrame.Size = UDim2.new(1, 0, 1, 0)
+	backgroundFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	backgroundFrame.Parent = billboardGui
+
+	local healthFrame = Instance.new("Frame")
+	healthFrame.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+	healthFrame.AnchorPoint = Vector2.new(0, 0.5)
+	healthFrame.Size = UDim2.new(1, 0, 1, 0)
+	healthFrame.Position = UDim2.new(0, 0, 0.5, 0)
+	healthFrame.Parent = backgroundFrame
+
+	self.frame = healthFrame
+
+	self.HealthChanged:Connect(function()
+		self:UpdateHealthGui()
+	end)
+
+	billboardGui.Parent = self.model.PrimaryPart
+end
+
+-- Function to update the health GUI
+function Enemy:UpdateHealthGui()
+	local goal = { Size = UDim2.new(math.clamp(self.health / self.maxHealth, 0, 1), 0, 1, 0) }
+	local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(self.frame, tweenInfo, goal)
+
+	self.janitor:Add(tween, "Destroy")
+	tween:Play()
 end
 
 -- Function to spawn the enemy at the designated spawn point
@@ -57,6 +105,7 @@ end
 -- Function to reduce the enemy's health by a certain amount of damage
 function Enemy:TakeDamage(damage)
 	self.health -= damage
+	self.HealthChanged:Fire()
 	if self.health <= 0 then
 		self:Destroy()
 	end

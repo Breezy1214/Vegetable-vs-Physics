@@ -72,6 +72,8 @@ function HouseService:PurchaseHouse(player, houseName)
 		end
 
 		-- Create a new house and start a new wave
+		local WeaponService = Knit.GetService("WeaponService")
+		WeaponService:CreateGui(player)
 		local house = House.new(player, houseFolder[houseName])
 		local wave = Wave.new(player)
 		wave:StartGame()
