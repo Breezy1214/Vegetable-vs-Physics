@@ -7,6 +7,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local Enemy = require(ServerScriptService.Classes.Enemy)
 local Janitor = require(ReplicatedStorage.Packages.janitor)
 local House = require(ServerScriptService.Classes.House)
+local Knit = require(ReplicatedStorage.Packages.Knit)
 
 -- Define Wave module
 local Wave = {}
@@ -27,7 +28,7 @@ function Wave.new(player)
 	self.player = player
 	self.house = House.GetHouseFromPlayer(player)
 	self.enemiesAlive = 0
-
+	self:CreateGui()
 	-- Connection to handle house destruction
 	self.janitor:Add(
 		self.house.house.Destroying:Connect(function()
@@ -51,15 +52,87 @@ function Wave.new(player)
 	return self
 end
 
+-- Function to create the wave gui
+function Wave:CreateGui()
+	self.gui = {
+		ScreenGui = self.janitor:Add(Instance.new("ScreenGui")),
+		Frame = self.janitor:Add(Instance.new("Frame")),
+		TextLabel = self.janitor:Add(Instance.new("TextLabel")),
+		UITextSizeConstraint = self.janitor:Add(Instance.new("UITextSizeConstraint")),
+		UIAspectRatioConstraint = self.janitor:Add(Instance.new("UIAspectRatioConstraint")),
+	}
+
+	self.gui.ScreenGui.Name = "WaveGui"
+	self.gui.ScreenGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	self.gui.ScreenGui.IgnoreGuiInset = true
+	self.gui.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	self.gui.ScreenGui.Enabled = false
+
+	self.gui.Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.gui.Frame.BorderSizePixel = 0
+	self.gui.Frame.Size = UDim2.new(1, 0, 0.312652, 0)
+	self.gui.Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	self.gui.Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	self.gui.Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	self.gui.Frame.Parent = self.gui.ScreenGui
+
+	self.gui.TextLabel.TextWrapped = true
+	self.gui.TextLabel.BorderSizePixel = 0
+	self.gui.TextLabel.TextScaled = true
+	self.gui.TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	self.gui.TextLabel.FontFace =
+		Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+	self.gui.TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.gui.TextLabel.TextSize = 14
+	self.gui.TextLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+	self.gui.TextLabel.Size = UDim2.new(1, 0, 1, 0)
+	self.gui.TextLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+	self.gui.TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	self.gui.TextLabel.Text = "WAVE 1 STARTING IN 3"
+	self.gui.TextLabel.BackgroundTransparency = 1
+	self.gui.TextLabel.Parent = self.gui.Frame
+
+	self.gui.UITextSizeConstraint.Parent = self.gui.TextLabel
+
+	self.gui.UIAspectRatioConstraint.AspectRatio = 1.87105
+	self.gui.UIAspectRatioConstraint.Parent = self.gui.ScreenGui
+	self.gui.ScreenGui.Parent = self.player.PlayerGui
+end
+
+function Wave:CountDown()
+	self.gui.ScreenGui.Enabled = true
+	for i = 3, 0, -1 do
+		self.gui.TextLabel.Text = "WAVE " .. tostring(self.currentWave) .. " STARTING IN " .. tostring(i)
+		task.wait(1)
+	end
+	self.gui.ScreenGui.Enabled = false
+	self.gui.TextLabel.Text = "WAVE 1 STARTING IN 3"
+end
+
 -- Function to start the game
 function Wave:StartGame()
 	self.currentState = "RUNNING"
 	self:NextWave()
 end
 
+-- Function to start the next wave
+function Wave:NextWave()
+	if self.currentState == "ENDED" then
+		return
+	end
+
+	self.currentWave += 1
+	self:CountDown()
+	-- Configure enemy properties
+	local health = 100 -- might need to update this to match the wave for more difficulty later
+	self:SpawnEnemies(ENEMY_SPEED, health)
+end
+
 -- Function to end the game
 function Wave:EndGame()
 	self.currentState = "ENDED"
+	local CoinService = Knit.GetService("CoinService")
+	CoinService:ResetCoins(self.player)
 	self.janitor:Destroy()
 end
 
@@ -80,11 +153,17 @@ function Wave:SpawnEnemies(speed, health)
 				self.janitor:Add(
 					task.defer(function()
 						task.wait(3)
+						if not enemy then
+							return
+						end
 						enemy:Move()
 					end),
 					true
 				)
 			else
+				if not enemy then
+					return
+				end
 				enemy:Move()
 			end
 
@@ -105,31 +184,13 @@ function Wave:OnEnemiesDefeated(enemy, id)
 
 		self.enemies[id] = nil
 		self.enemiesAlive -= 1
+		local CoinService = Knit.GetService("CoinService")
+		CoinService:AddCoins(self.player, 10)
 
 		if self.enemiesAlive <= 0 then
 			self:NextWave()
 		end
 	end)
-end
-
--- Function to start the next wave
-function Wave:NextWave()
-	if self.currentState == "ENDED" then
-		return
-	end
-
-	for i = 1, 3 do
-		print(i)
-		task.wait(1)
-	end
-
-	self.currentWave += 1
-	print("Wave " .. self.currentWave .. " is starting!")
-
-	-- Configure enemy properties
-	local health = 100 -- might need to update this to match the wave for more difficulty later
-
-	self:SpawnEnemies(ENEMY_SPEED, health)
 end
 
 return Wave

@@ -1,5 +1,6 @@
 local Knit = require(game:GetService("ReplicatedStorage").Packages.Knit)
 local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 game:GetService("Players").PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(char)

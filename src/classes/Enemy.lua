@@ -46,7 +46,6 @@ function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: In
 		modelToEnemyMap[self.model] = nil
 		setmetatable(self, nil)
 		table.clear(self)
-		print("Enemy has been destroyed")
 	end, true)
 
 	modelToEnemyMap[self.model] = self
@@ -99,7 +98,6 @@ function Enemy:Spawn()
 	local spawnLocation = self.target.house.EnemySpawnPoints[self.model.Name]
 	self.model:PivotTo(CFrame.new(spawnLocation.Position))
 	self.model.Parent = workspace
-	warn("Enemy spawned")
 end
 
 -- Function to reduce the enemy's health by a certain amount of damage

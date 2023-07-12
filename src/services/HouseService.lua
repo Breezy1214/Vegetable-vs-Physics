@@ -8,7 +8,6 @@ local ServerStorage = game:GetService("ServerStorage")
 -- Import external modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local House = require(ServerScriptService.Classes.House)
-local Wave = require(ServerScriptService.Classes.Wave)
 local Promise = require(Knit.Util.Promise)
 
 -- Define constants
@@ -71,12 +70,14 @@ function HouseService:PurchaseHouse(player, houseName)
 			return
 		end
 
-		-- Create a new house and start a new wave
+		-- Create a new house
+		local house = House.new(player, houseFolder[houseName])
+		-- Signal the WeaponService to create GUI for the player
 		local WeaponService = Knit.GetService("WeaponService")
 		WeaponService:CreateGui(player)
-		local house = House.new(player, houseFolder[houseName])
-		local wave = Wave.new(player)
-		wave:StartGame()
+		-- Signal the GameService to start the game
+		local GameService = Knit.GetService("GameService")
+		GameService:StartGame(player)
 
 		resolve(house)
 	end)

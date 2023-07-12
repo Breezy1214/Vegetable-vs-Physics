@@ -15,6 +15,10 @@ function CoinService:KnitInit()
 	Players.PlayerAdded:Connect(function(player)
 		self:CreateLeaderStat(player)
 	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		
+	end)
 end
 
 function CoinService:CreateLeaderStat(player)
@@ -26,6 +30,14 @@ function CoinService:CreateLeaderStat(player)
 	coins.Parent = leaderstats
 
 	leaderstats.Parent = player
+end
+
+function CoinService:GetCoins(player)
+	return player.leaderstats.Coins.Value
+end
+
+function CoinService:ResetCoins(player)
+	player.leaderstats.Coins.Value = 0
 end
 
 function CoinService:AddCoins(player, amount)
@@ -49,7 +61,7 @@ function CoinService:RemoveCoins(player, amount)
 		return
 	end
 
-	player.leaderstats.Coins.Value = math.clamp(0, player.leaderstats.Coins.Value - amount)
+	player.leaderstats.Coins.Value = math.max(0, player.leaderstats.Coins.Value - amount)
 end
 
 return CoinService
