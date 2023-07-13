@@ -34,12 +34,15 @@ function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: In
 	self.target = house
 	self.shouldDamageHouse = false
 	self.HealthChanged = Signal.new()
+	self.moving = false
+	self.destroyed = false
 
 	-- Creating a health bar with BillboardGui
 	self:CreateHealthBar()
 
 	-- Add cleanup function
 	self.janitor:Add(function()
+		self.destroyed = true
 		self.HealthChanged:Destroy()
 		self.model:Destroy()
 		self.shouldDamageHouse = false -- Stop damage coroutine
@@ -102,6 +105,10 @@ end
 
 -- Function to reduce the enemy's health by a certain amount of damage
 function Enemy:TakeDamage(damage)
+	if self.moving == false and self.shouldDamageHouse == false then
+		return
+	end
+
 	self.health -= damage
 	self.HealthChanged:Fire()
 	if self.health <= 0 then
@@ -141,12 +148,14 @@ function Enemy:Move()
 				return
 			end
 
+			self.moving = false
 			self:DamageHouse()
 		end),
 		"Disconnect"
 	)
 
 	tween:Play()
+	self.moving = true
 end
 
 -- Function to destroy the enemy and clean up connections

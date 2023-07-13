@@ -12,6 +12,7 @@ local WeaponService = Knit.CreateService({
 	Client = {
 		CreateGuiSignal = Knit.CreateSignal(), -- Create GUI signal
 		ButtonPressed = Knit.CreateSignal(), -- Button pressed signal
+		ExplodeBombSignal = Knit.CreateSignal(),
 	},
 })
 
@@ -71,10 +72,13 @@ function WeaponService:SpawnBoulder(player)
 
 		task.delay(20, function()
 			-- Check if boulder exists before trying to destroy it
-			if boulder == nil then
+			if boulder == nil or boulder.destroyed then
+				boulder = nil
 				return
 			end
+
 			boulder:Destroy()
+			boulder = nil
 		end)
 	end
 end
@@ -83,29 +87,12 @@ end
 function WeaponService:SpawnBomb(player)
 	local house = House.GetHouseFromPlayer(player) -- Get the player's house
 	local middleAttachment = house.house.WeaponSpawner.Middle -- Get the weapon spawner middle position
-	local bomb = Bomb.new(middleAttachment.WorldCFrame.Position) -- Create a new bomb
+	local bomb = Bomb.new(middleAttachment.WorldCFrame.Position)
 
 	task.delay(2, function()
-		-- Check if bomb exists before trying to explode it just incase. Should always exist though
-		if bomb == nil then
-			return
-		end
-		bomb:Explode()
+		self.Client.ExplodeBombSignal:Fire(player, middleAttachment, bomb.part)
+		bomb:Explode(player)
 	end)
-end
-
--- Function to start the service
-function WeaponService:KnitStart()
-	local boulderSpawnPart = workspace.SpawnBoulder -- Get the boulder spawn part
-	local clickDectector = Instance.new("ClickDetector") -- Create a new ClickDetector
-
-	-- Connect the MouseClick event to spawn a boulder
-	clickDectector.MouseClick:Connect(function(playerWhoClicked)
-		self:SpawnBoulder(playerWhoClicked)
-	end)
-
-	-- Set the parent of the ClickDetector
-	clickDectector.Parent = boulderSpawnPart
 end
 
 -- Return the service

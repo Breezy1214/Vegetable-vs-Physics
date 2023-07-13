@@ -9,6 +9,8 @@ local Janitor = require(ReplicatedStorage.Packages.janitor)
 local House = require(ServerScriptService.Classes.House)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
+local Cache = {}
+
 -- Define Wave module
 local Wave = {}
 Wave.__index = Wave
@@ -16,12 +18,18 @@ Wave.__index = Wave
 -- Constants
 local ENEMY_SPEED = 20
 
--- Wave constructor
+-- Function to return wave instance for a player
+function Wave.GetWaveFromPlayer(player)
+	return Cache[player]
+end
+
+-- Function to create a new wave instance
 function Wave.new(player)
 	local self = setmetatable({}, Wave)
 
 	-- Initialize wave properties
 	self.currentState = "IDLE"
+	self.spawning = false
 	self.currentWave = 0
 	self.enemies = {}
 	self.janitor = Janitor.new()
@@ -29,6 +37,14 @@ function Wave.new(player)
 	self.house = House.GetHouseFromPlayer(player)
 	self.enemiesAlive = 0
 	self:CreateGui()
+	self:ConfigureJanitor()
+
+	Cache[player] = self
+	return self
+end
+
+-- Function to configure the janitor for cleanup
+function Wave:ConfigureJanitor()
 	-- Connection to handle house destruction
 	self.janitor:Add(
 		self.house.house.Destroying:Connect(function()
@@ -43,13 +59,15 @@ function Wave.new(player)
 			enemy:Destroy()
 		end
 
+		Cache[self.player] = nil
 		table.clear(self.enemies) -- Clear enemies table
+		local CoinService = Knit.GetService("CoinService")
+		CoinService:ResetCoins(self.player)
+		self.player:LoadCharacter()
 		setmetatable(self, nil) -- Clear metatable
 		table.clear(self) -- Clear self
 		print("Wave ended then cleaned up.")
 	end, true)
-
-	return self
 end
 
 -- Function to create the wave gui
@@ -102,9 +120,18 @@ end
 function Wave:CountDown()
 	self.gui.ScreenGui.Enabled = true
 	for i = 3, 0, -1 do
+		if not self or self.currentState == "ENDED" or not self.player then
+			break
+		end
+
 		self.gui.TextLabel.Text = "WAVE " .. tostring(self.currentWave) .. " STARTING IN " .. tostring(i)
 		task.wait(1)
 	end
+
+	if not self or self.currentState == "ENDED" or not self.player then
+		return
+	end
+
 	self.gui.ScreenGui.Enabled = false
 	self.gui.TextLabel.Text = "WAVE 1 STARTING IN 3"
 end
@@ -117,7 +144,7 @@ end
 
 -- Function to start the next wave
 function Wave:NextWave()
-	if self.currentState == "ENDED" then
+	if not self or self.currentState == "ENDED" or not self.player then
 		return
 	end
 
@@ -125,35 +152,46 @@ function Wave:NextWave()
 	self:CountDown()
 	-- Configure enemy properties
 	local health = 100 -- might need to update this to match the wave for more difficulty later
+
+	if not self or self.currentState == "ENDED" or not self.player then
+		return
+	end
+
 	self:SpawnEnemies(ENEMY_SPEED, health)
 end
 
 -- Function to end the game
 function Wave:EndGame()
 	self.currentState = "ENDED"
-	local CoinService = Knit.GetService("CoinService")
-	CoinService:ResetCoins(self.player)
 	self.janitor:Destroy()
 end
 
 -- Function to spawn enemies for the wave
 function Wave:SpawnEnemies(speed, health)
+	if not self or self.currentState == "ENDED" or not self.player then
+		return
+	end
+
+	self.spawning = true
 	for count = 1, self.currentWave do
 		for i = 1, 10 do
+			if not self or self.currentState == "ENDED" or not self.player then
+				break
+			end
+
 			local enemy = Enemy.new(self.house, ServerStorage.Enemies.Vegetable:Clone(), speed, health)
 			enemy.model.Name = tostring(i)
 			enemy:Spawn()
 			self.enemiesAlive += 1
-			local id = #self.enemies + 1 -- Generate a unique id for each enemy
-			self.enemies[id] = enemy
-			self:OnEnemiesDefeated(enemy, id)
+			self.enemies[enemy] = enemy
+			self:OnEnemiesDefeated(enemy)
 
 			-- Delay the enemy's move if it's within the first 5 enemies
 			if i <= 5 then
 				self.janitor:Add(
 					task.defer(function()
 						task.wait(3)
-						if not enemy then
+						if not enemy or enemy.destroyed then
 							return
 						end
 						enemy:Move()
@@ -161,7 +199,7 @@ function Wave:SpawnEnemies(speed, health)
 					true
 				)
 			else
-				if not enemy then
+				if not enemy or enemy.destroyed then
 					return
 				end
 				enemy:Move()
@@ -172,22 +210,34 @@ function Wave:SpawnEnemies(speed, health)
 			task.wait(delayTime)
 		end
 
+		if not self or not self.player then
+			break
+		end
+
 		task.wait(5)
 	end
+	self.spawning = false
 end
 
-function Wave:OnEnemiesDefeated(enemy, id)
+function Wave:OnEnemiesDefeated(enemy)
 	enemy.model.Destroying:Connect(function()
 		if not self and not self.enemies and not self.enemiesAlive then
 			return
 		end
 
-		self.enemies[id] = nil
+		self.enemies[enemy] = nil
 		self.enemiesAlive -= 1
 		local CoinService = Knit.GetService("CoinService")
 		CoinService:AddCoins(self.player, 10)
 
+		task.wait(0.5)
+
 		if self.enemiesAlive <= 0 then
+			print(self.enemiesAlive)
+			print(self.spawning)
+		end
+
+		if self.enemiesAlive <= 0 and self.spawning == false then
 			self:NextWave()
 		end
 	end)

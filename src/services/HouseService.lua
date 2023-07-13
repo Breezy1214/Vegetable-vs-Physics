@@ -46,10 +46,12 @@ function HouseService:SetupPurchasePads(pad)
 		self:PurchaseHouse(player, pad.Name)
 			:andThen(function(house)
 				house.house.Destroying:Connect(function()
+					print("fired")
 					pad:SetAttribute("IsOwned", false)
 					pad.Parent = workspace.PurchasePads
 				end)
 
+				print("should be nil")
 				pad.Parent = nil
 			end)
 			:catch(function(err)
@@ -63,6 +65,7 @@ end
 function HouseService:PurchaseHouse(player, houseName)
 	return Promise.new(function(resolve, reject)
 		local playerOldHouse = House.GetHouseFromPlayer(player)
+		print("Checked playerOldHouse", playerOldHouse)
 
 		-- Check if the player already has a house
 		if playerOldHouse then
@@ -70,14 +73,19 @@ function HouseService:PurchaseHouse(player, houseName)
 			return
 		end
 
+		print("Creating new house")
 		-- Create a new house
 		local house = House.new(player, houseFolder[houseName])
+
 		-- Signal the WeaponService to create GUI for the player
 		local WeaponService = Knit.GetService("WeaponService")
 		WeaponService:CreateGui(player)
+		print("Created GUI")
+
 		-- Signal the GameService to start the game
 		local GameService = Knit.GetService("GameService")
 		GameService:StartGame(player)
+		print("Started game")
 
 		resolve(house)
 	end)

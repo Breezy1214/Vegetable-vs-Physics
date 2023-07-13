@@ -16,9 +16,7 @@ function CoinService:KnitInit()
 		self:CreateLeaderStat(player)
 	end)
 
-	Players.PlayerRemoving:Connect(function(player)
-		
-	end)
+	Players.PlayerRemoving:Connect(function(player) end)
 end
 
 function CoinService:CreateLeaderStat(player)

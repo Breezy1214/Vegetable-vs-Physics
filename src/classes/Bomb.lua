@@ -1,7 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Janitor = require(ReplicatedStorage.Packages.janitor)
-local Enemy = require(ServerScriptService.Classes.Enemy)
+local Wave = require(ServerScriptService.Classes.Wave)
 
 local Bomb = {}
 Bomb.__index = Bomb
@@ -26,8 +26,16 @@ function Bomb.new(position: Vector3)
 	return self
 end
 
-function Bomb:Explode()
-	
+function Bomb:Explode(player)
+	self.part.Anchored = true
+	local playerWave = Wave.GetWaveFromPlayer(player)
+
+	for _, enemy in playerWave.enemies do
+		enemy:TakeDamage(100)
+	end
+
+	task.wait(0.5)
+	self:Destroy()
 end
 
 function Bomb:Destroy()

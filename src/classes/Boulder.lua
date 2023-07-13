@@ -23,13 +23,22 @@ function Boulder.new(position: Vector3)
 	self.part.Parent = workspace
 	self.part.AssemblyLinearVelocity = Vector3.new(0, 0, 8)
 	self.janitor = Janitor.new()
-	self.janitor:LinkToInstance(self.part)
 	self.debounce = false
+	self.destroyed = false
+
+	self.janitor:Add(
+		self.part.Destroying:Connect(function()
+			self:Destroy()
+		end),
+		"Disconnect"
+	)
 
 	self.janitor:Add(function()
-		self.part:Destroy()
+		self.destroyed = true
+		if self.part then
+			self.part:Destroy()
+		end
 		setmetatable(self, nil)
-		print("boulder is destroyed")
 	end)
 
 	return self

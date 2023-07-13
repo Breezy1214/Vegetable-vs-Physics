@@ -8,8 +8,11 @@ local GameService = Knit.CreateService({
 })
 
 function GameService:StartGame(player)
-	local wave = Wave.new(player)
-	wave:StartGame()
+	task.spawn(function()
+		task.wait(1)
+		local wave = Wave.new(player)
+		wave:StartGame()
+	end)
 end
 
 return GameService

@@ -20,6 +20,10 @@ function WeaponController:KnitInit()
 	WeaponService.CreateGuiSignal:Connect(function()
 		self:CreateGui()
 	end)
+
+	WeaponService.ExplodeBombSignal:Connect(function(middleAttachment, bomb)
+		self:ExplodeBomb(middleAttachment, bomb)
+	end)
 end
 
 -- Function to create the GUI
@@ -119,6 +123,16 @@ function WeaponController:AddWeaponButton(WeaponService, weapon, cost)
 	newButton.MouseButton1Click:Connect(function()
 		WeaponService.ButtonPressed:Fire(newButton.Name)
 	end)
+end
+
+function WeaponController:ExplodeBomb(middleAttachment, bomb)
+	-- Check if bomb exists before trying to explode it just incase. Should always exist though
+	if bomb == nil then
+		return
+	end
+	local explosion = Instance.new("Explosion")
+	explosion.Position = bomb.Position
+	explosion.Parent = bomb
 end
 
 return WeaponController
