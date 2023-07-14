@@ -22,7 +22,7 @@ function CoinService:CreateLeaderStat(player)
 	leaderstats.Name = "leaderstats"
 	local coins = Instance.new("IntValue")
 	coins.Name = "Coins"
-	coins.Value = 100
+	coins.Value = 0
 	coins.Parent = leaderstats
 
 	leaderstats.Parent = player

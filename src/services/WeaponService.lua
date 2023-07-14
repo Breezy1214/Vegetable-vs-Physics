@@ -5,6 +5,14 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Boulder = require(ServerScriptService.Classes.Boulder)
 local Bomb = require(ServerScriptService.Classes.Bomb)
 local House = require(ServerScriptService.Classes.House)
+local WeaponPerPlayer = {}
+
+local function w(player, weapon)
+	if WeaponPerPlayer[player] == nil then
+		WeaponPerPlayer[player] = {}
+	end
+	table.insert(WeaponPerPlayer[player], weapon)
+end
 
 -- Create the WeaponService
 local WeaponService = Knit.CreateService({
@@ -68,6 +76,7 @@ function WeaponService:SpawnBoulder(player)
 
 	for _, v in positions do
 		local boulder = Boulder.new(v.WorldCFrame.Position) -- Create a new boulder
+
 		boulder:StartListeningForCollisions() -- Start listening for collisions
 
 		task.delay(20, function()

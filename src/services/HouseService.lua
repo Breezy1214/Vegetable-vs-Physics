@@ -46,12 +46,10 @@ function HouseService:SetupPurchasePads(pad)
 		self:PurchaseHouse(player, pad.Name)
 			:andThen(function(house)
 				house.house.Destroying:Connect(function()
-					print("fired")
 					pad:SetAttribute("IsOwned", false)
 					pad.Parent = workspace.PurchasePads
 				end)
 
-				print("should be nil")
 				pad.Parent = nil
 			end)
 			:catch(function(err)

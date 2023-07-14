@@ -154,8 +154,8 @@ function Enemy:Move()
 		"Disconnect"
 	)
 
-	tween:Play()
 	self.moving = true
+	tween:Play()
 end
 
 -- Function to destroy the enemy and clean up connections
