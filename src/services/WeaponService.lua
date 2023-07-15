@@ -6,14 +6,6 @@ local Boulder = require(ServerScriptService.Classes.Boulder)
 local Bomb = require(ServerScriptService.Classes.Bomb)
 local House = require(ServerScriptService.Classes.House)
 local Catapult = require(ServerScriptService.Classes.Catapult)
-local WeaponPerPlayer = {}
-
-local function w(player, weapon)
-	if WeaponPerPlayer[player] == nil then
-		WeaponPerPlayer[player] = {}
-	end
-	table.insert(WeaponPerPlayer[player], weapon)
-end
 
 -- Create the WeaponService
 local WeaponService = Knit.CreateService({

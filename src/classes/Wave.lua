@@ -136,6 +136,7 @@ function Wave:ConfigureJanitor()
 
 		local CoinService = Knit.GetService("CoinService")
 		CoinService:ResetCoins(self.player)
+		self.player:LoadCharacter()
 
 		setmetatable(self, nil)
 		table.clear(self)

@@ -31,8 +31,10 @@ function Bomb:Explode(player)
 	self.part.Anchored = true
 	local playerWave = Wave.GetWaveFromPlayer(player)
 
-	for _, enemy in playerWave.enemies do
-		enemy:TakeDamage(100)
+	if playerWave and playerWave.enemies ~= nil then
+		for _, enemy in playerWave.enemies do
+			enemy:TakeDamage(100)
+		end
 	end
 
 	task.wait(0.5)

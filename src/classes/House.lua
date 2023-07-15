@@ -42,7 +42,6 @@ function House.new(player, house)
 		setmetatable(self, nil)
 		table.clear(self)
 		self = nil
-		print("destroyed house object")
 	end, true)
 
 	-- Hiding the enemy spawn and end points
