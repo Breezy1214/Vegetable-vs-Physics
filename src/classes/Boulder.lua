@@ -39,6 +39,8 @@ function Boulder.new(position: Vector3)
 			self.part:Destroy()
 		end
 		setmetatable(self, nil)
+		table.clear(self)
+		self = nil
 	end)
 
 	return self

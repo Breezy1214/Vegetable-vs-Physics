@@ -5,6 +5,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Boulder = require(ServerScriptService.Classes.Boulder)
 local Bomb = require(ServerScriptService.Classes.Bomb)
 local House = require(ServerScriptService.Classes.House)
+local Catapult = require(ServerScriptService.Classes.Catapult)
 local WeaponPerPlayer = {}
 
 local function w(player, weapon)
@@ -25,7 +26,7 @@ local WeaponService = Knit.CreateService({
 })
 
 -- Define weapons
-WeaponService.Weapons = { ["Boulder"] = 20, ["Bomb"] = 100 }
+WeaponService.Weapons = { ["Boulder"] = 20, ["Bomb"] = 100, ["Catapult"] = 30 }
 
 -- Define actions
 WeaponService.Actions = {
@@ -35,6 +36,10 @@ WeaponService.Actions = {
 
 	["Bomb"] = function(self, player)
 		self:SpawnBomb(player)
+	end,
+
+	["Catapult"] = function(self, player)
+		self:Catapult(player)
 	end,
 	-- Add other actions as needed
 }
@@ -75,13 +80,17 @@ function WeaponService:SpawnBoulder(player)
 	local positions = house.house.WeaponSpawner:GetChildren() -- Get the weapon spawner positions
 
 	for _, v in positions do
+		if v.Name == "BottomMiddle" then
+			continue
+		end
+
 		local boulder = Boulder.new(v.WorldCFrame.Position) -- Create a new boulder
 
 		boulder:StartListeningForCollisions() -- Start listening for collisions
 
 		task.delay(20, function()
 			-- Check if boulder exists before trying to destroy it
-			if boulder == nil or boulder.destroyed then
+			if boulder == nil or boulder.destroyed == nil or boulder.destroyed == true then
 				boulder = nil
 				return
 			end
@@ -95,13 +104,25 @@ end
 -- Function to spawn a bomb
 function WeaponService:SpawnBomb(player)
 	local house = House.GetHouseFromPlayer(player) -- Get the player's house
-	local middleAttachment = house.house.WeaponSpawner.Middle -- Get the weapon spawner middle position
-	local bomb = Bomb.new(middleAttachment.WorldCFrame.Position)
+	local topMiddleAttachment = house.house.WeaponSpawner.TopMiddle -- Get the weapon spawner middle position
+	local bomb = Bomb.new(topMiddleAttachment.WorldCFrame.Position)
 
 	task.delay(2, function()
-		self.Client.ExplodeBombSignal:Fire(player, middleAttachment, bomb.part)
+		self.Client.ExplodeBombSignal:Fire(player, topMiddleAttachment, bomb.part)
 		bomb:Explode(player)
 	end)
+end
+
+-- Function to spawn a catapult
+function WeaponService:Catapult(player)
+	local house = House.GetHouseFromPlayer(player) -- Get the player's house
+	local bottomMiddleAttachment = house.house.WeaponSpawner.BottomMiddle -- Get the weapon spawner middle position
+	local catapult = Catapult.new(bottomMiddleAttachment.WorldCFrame.Position)
+
+	-- task.delay(2, function()
+	-- 	self.Client.ExplodeBombSignal:Fire(player, middleAttachment, bomb.part)
+	-- 	bomb:Explode(player)
+	-- end)
 end
 
 -- Return the service

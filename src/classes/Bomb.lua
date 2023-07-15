@@ -20,6 +20,8 @@ function Bomb.new(position: Vector3)
 	self.janitor:Add(function()
 		self.part:Destroy()
 		setmetatable(self, nil)
+		table.clear(self)
+		self = nil
 	end)
 
 	return self

@@ -25,21 +25,24 @@ end
 function House.new(player, house)
 	local self = setmetatable({}, House)
 
-	self.house = house:Clone()
+	self.janitor = Janitor.new()
+	self.house = self.janitor:Add(house:Clone(), "Destroy")
+	self.janitor:LinkToInstance(self.house)
 	self.health = 100
 	self.maxHealth = self.health
 	self.owner = player
 	self.HealthChanged = Signal.new()
-	self.janitor = Janitor.new()
 
 	-- Creating a health bar with BillboardGui
 	self:CreateHealthBar()
 
 	self.janitor:Add(function()
-		self.house:Destroy()
 		self.HealthChanged:Destroy()
 		Cache[self.owner] = nil
 		setmetatable(self, nil)
+		table.clear(self)
+		self = nil
+		print("destroyed house object")
 	end, true)
 
 	-- Hiding the enemy spawn and end points

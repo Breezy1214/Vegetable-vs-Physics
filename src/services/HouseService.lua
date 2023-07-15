@@ -63,7 +63,6 @@ end
 function HouseService:PurchaseHouse(player, houseName)
 	return Promise.new(function(resolve, reject)
 		local playerOldHouse = House.GetHouseFromPlayer(player)
-		print("Checked playerOldHouse", playerOldHouse)
 
 		-- Check if the player already has a house
 		if playerOldHouse then

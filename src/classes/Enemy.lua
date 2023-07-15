@@ -49,6 +49,7 @@ function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: In
 		modelToEnemyMap[self.model] = nil
 		setmetatable(self, nil)
 		table.clear(self)
+		self = nil
 	end, true)
 
 	modelToEnemyMap[self.model] = self

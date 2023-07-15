@@ -127,7 +127,7 @@ function Wave:ConfigureJanitor()
 	)
 
 	self.janitor:Add(function()
-		for _, enemy in (self.enemies) do
+		for _, enemy in self.enemies do
 			enemy:Destroy()
 		end
 
@@ -139,6 +139,7 @@ function Wave:ConfigureJanitor()
 
 		setmetatable(self, nil)
 		table.clear(self)
+		self = nil
 
 		print("Wave ended and cleaned up.")
 	end, true)
@@ -168,14 +169,17 @@ function Wave:NextWave()
 	self:CountDown()
 
 	local health = 100
-	self:SpawnEnemies(ENEMY_SPEED, health)
+
+	if self ~= nil and self.player ~= nil then
+		self:SpawnEnemies(ENEMY_SPEED, health)
+	end
 end
 
 -- End the game
 function Wave:EndGame()
 	self.currentState = "ENDED"
 	PlayerWaves[self.player] = nil
-	self.janitor:Cleanup()
+	self.janitor:Destroy()
 end
 
 -- Spawn enemies for the wave
@@ -230,12 +234,12 @@ function Wave:SpawnEnemies(speed, health)
 
 	self.waveLock = false
 
-	if not self or self.waveCompletedSignal then
+	if not self or not self.waveCompletedSignal then
 		return
 	end
 
 	--technically the line above should be enough
-	-- but i found edge cases where when the player loses,
+	-- but i found rare edge cases where when the player loses at a certain time,
 	-- self.waveCompletedSignal was set to nil in between the check and the Fire call.
 	-- hence another check
 
