@@ -1,4 +1,5 @@
 -- Import services
+local Players = game:GetService("Players")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
@@ -39,6 +40,7 @@ function Wave.new(player)
 	self.enemiesAlive = 0
 	self.waveLock = false
 	self.waveCompletedSignal = Signal.new()
+	self.playerDisconnecting = false
 
 	self.waveCompletedSignal:Connect(function()
 		self:NextWave()
@@ -134,9 +136,11 @@ function Wave:ConfigureJanitor()
 		self.waveCompletedSignal:Destroy()
 		table.clear(self.enemies)
 
-		local CoinService = Knit.GetService("CoinService")
-		CoinService:ResetCoins(self.player)
-		self.player:LoadCharacter()
+		if self.playerDisconnecting == false then
+			local CoinService = Knit.GetService("CoinService")
+			CoinService:ResetCoins(self.player)
+			self.player:LoadCharacter()
+		end
 
 		setmetatable(self, nil)
 		table.clear(self)
@@ -178,6 +182,11 @@ end
 
 -- End the game
 function Wave:EndGame()
+	if self.currentState == "ENDED" then
+		warn("Destroying already in place")
+		return
+	end
+
 	self.currentState = "ENDED"
 	PlayerWaves[self.player] = nil
 	self.janitor:Destroy()
@@ -207,10 +216,9 @@ function Wave:SpawnEnemies(speed, health)
 				self.janitor:Add(
 					task.defer(function()
 						task.wait(3)
-						if enemy == nil or enemy.destroyed == true then
-							return
+						if enemy ~= nil and enemy.destroyed == false then
+							enemy:Move()
 						end
-						enemy:Move()
 					end),
 					true
 				)

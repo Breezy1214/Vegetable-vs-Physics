@@ -21,8 +21,8 @@ function WeaponController:KnitInit()
 		self:CreateGui()
 	end)
 
-	WeaponService.ExplodeBombSignal:Connect(function(middleAttachment, bomb)
-		self:ExplodeBomb(middleAttachment, bomb)
+	WeaponService.ExplosionSignal:Connect(function(object)
+		self:ShowExplosion(object)
 	end)
 end
 
@@ -125,14 +125,38 @@ function WeaponController:AddWeaponButton(WeaponService, weapon, cost)
 	end)
 end
 
-function WeaponController:ExplodeBomb(middleAttachment, bomb)
-	-- Check if bomb exists before trying to explode it just incase. Should always exist though
-	if bomb == nil then
+function WeaponController:ShowExplosion(object)
+	-- Check if object exists before trying to explode it just incase. Should always exist though
+	if object == nil then
 		return
 	end
 	local explosion = Instance.new("Explosion")
-	explosion.Position = bomb.Position
-	explosion.Parent = bomb
+	explosion.BlastPressure = 0
+	local modelsHit = {}
+
+	explosion.Hit:Connect(function(part, distance)
+		local parentModel = part.Parent
+
+		if not parentModel then
+			return
+		end
+
+		if modelsHit[parentModel] then
+			return
+		end
+
+		modelsHit[parentModel] = true
+
+		local humanoid = parentModel:FindFirstChild("Humanoid")
+		if humanoid then
+			local distanceFactor = distance / explosion.BlastRadius -- get the distance as a value between 0 and 1
+			distanceFactor = 1 - distanceFactor -- flip the amount, so that lower == closer == more damage
+			humanoid:TakeDamage(0) -- TakeDamage to respect ForceFields
+		end
+	end)
+
+	explosion.Position = object.Position
+	explosion.Parent = object
 end
 
 return WeaponController

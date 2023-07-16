@@ -27,7 +27,7 @@ function House.new(player, house)
 
 	self.janitor = Janitor.new()
 	self.house = self.janitor:Add(house:Clone(), "Destroy")
-	self.janitor:LinkToInstance(self.house)
+	--self.janitor:LinkToInstance(self.house)
 	self.health = 100
 	self.maxHealth = self.health
 	self.owner = player

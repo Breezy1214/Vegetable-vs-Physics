@@ -13,7 +13,7 @@ local WeaponService = Knit.CreateService({
 	Client = {
 		CreateGuiSignal = Knit.CreateSignal(), -- Create GUI signal
 		ButtonPressed = Knit.CreateSignal(), -- Button pressed signal
-		ExplodeBombSignal = Knit.CreateSignal(),
+		ExplosionSignal = Knit.CreateSignal(),
 	},
 })
 
@@ -100,21 +100,37 @@ function WeaponService:SpawnBomb(player)
 	local bomb = Bomb.new(topMiddleAttachment.WorldCFrame.Position)
 
 	task.delay(2, function()
-		self.Client.ExplodeBombSignal:Fire(player, topMiddleAttachment, bomb.part)
+		self.Client.ExplosionSignal:Fire(player, bomb.part)
 		bomb:Explode(player)
 	end)
 end
 
 -- Function to spawn a catapult
 function WeaponService:Catapult(player)
+	-- player should only be able to spawn one at a time
+	-- can be changed later on but i prefer this for now
+	if workspace:FindFirstChild(player.Name .. "Catapult") then
+		return
+	end
+
 	local house = House.GetHouseFromPlayer(player) -- Get the player's house
 	local bottomMiddleAttachment = house.house.WeaponSpawner.BottomMiddle -- Get the weapon spawner middle position
-	local catapult = Catapult.new(bottomMiddleAttachment.WorldCFrame.Position)
+	local catapult = Catapult.new(player.Name, bottomMiddleAttachment.WorldCFrame.Position)
+	local thread
 
-	-- task.delay(2, function()
-	-- 	self.Client.ExplodeBombSignal:Fire(player, middleAttachment, bomb.part)
-	-- 	bomb:Explode(player)
-	-- end)
+	thread = task.defer(function()
+		while true do
+			task.wait(1)
+			catapult:Fire()
+			task.wait(1)
+			self.Client.ExplosionSignal:Fire(player, catapult.Ammo)
+		end
+	end)
+
+	task.delay(30, function()
+		task.cancel(thread)
+		catapult:Destroy()
+	end)
 end
 
 -- Return the service

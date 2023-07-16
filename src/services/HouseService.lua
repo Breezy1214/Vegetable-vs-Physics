@@ -88,21 +88,4 @@ function HouseService:PurchaseHouse(player, houseName)
 	end)
 end
 
--- Function to start HouseService
-function HouseService:KnitStart()
-	local damagehousepart = workspace.DamageHouse
-	local clickDectector = Instance.new("ClickDetector")
-	clickDectector.MouseClick:Connect(function(playerWhoClicked)
-		local house = House.GetHouseFromPlayer(playerWhoClicked)
-		if not house then
-			return
-		end
-
-		-- Damage the house
-		house:Damage(50)
-	end)
-
-	clickDectector.Parent = damagehousepart
-end
-
 return HouseService
