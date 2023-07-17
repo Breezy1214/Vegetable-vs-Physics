@@ -11,7 +11,6 @@ local House = require(ServerScriptService.Classes.House)
 -- Create the GameService
 local GameService = Knit.CreateService({
 	Name = "GameService",
-	Client = {},
 })
 
 -- Initialize the service

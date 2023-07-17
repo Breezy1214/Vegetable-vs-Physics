@@ -22,7 +22,7 @@ function EnemyController:KnitStart()
 		)
 
 		-- Connection to respond to the completion of the tween and start damaging the house
-		local damageConnection
+		local damageConnection, updateTask
 		damageConnection = enemyTween.Completed:Connect(function(state)
 			-- If the tween didn't finish, don't damage the house
 			if state ~= Enum.PlaybackState.Completed then
@@ -33,13 +33,14 @@ function EnemyController:KnitStart()
 			DamageHouseEvent:FireServer(model)
 			-- Disconnect the connection after the enemy has reached the target
 			damageConnection:Disconnect()
+			task.cancel(updateTask)
 		end)
 
 		-- Start the tween
 		enemyTween:Play()
 
 		-- Create a task that runs in the background, updating the server with the enemy's position every second
-		local updateTask = task.spawn(function()
+		updateTask = task.spawn(function()
 			while true do
 				task.wait(1)
 				local primaryPart = model.PrimaryPart
