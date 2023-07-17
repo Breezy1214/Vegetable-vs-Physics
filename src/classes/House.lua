@@ -1,41 +1,48 @@
--- Importing services
+-- Importing required services and modules
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-
--- Importing external modules
 local Signal = require(ReplicatedStorage.Packages.signal)
 local Janitor = require(ReplicatedStorage.Packages.janitor)
 
+-- Cache to store created houses
 local Cache = {}
 
+-- House class
 local House = {}
 House.__index = House
 
--- Returns the house associated with a given player
+-- Fetches house instance associated with the player
 function House.GetHouseFromPlayer(player)
 	return Cache[player]
 end
 
--- Returns all the houses in the cache
+-- Fetches all the houses in the cache
 function House.GetAllHouses()
 	return Cache
 end
 
--- Constructor function for the House object
-function House.new(player, house)
+-- Constructor function for the House class
+function House.new(player, houseModel)
 	local self = setmetatable({}, House)
 
+	-- Instantiate a new Janitor for this house instance
 	self.janitor = Janitor.new()
-	self.house = self.janitor:Add(house:Clone(), "Destroy")
-	--self.janitor:LinkToInstance(self.house)
-	self.health = 100
-	self.maxHealth = self.health
+
+	-- Create a copy of the house model and assign to this house
+	self.house = self.janitor:Add(houseModel:Clone(), "Destroy")
+
+	-- Set initial house attributes
+	self.maxHealth = 100
+	self.health = self.maxHealth
 	self.owner = player
+
+	-- Signal to indicate health change
 	self.HealthChanged = Signal.new()
 
-	-- Creating a health bar with BillboardGui
+	-- Create a GUI to show the health status of the house
 	self:CreateHealthBar()
 
+	-- Register a clean up function to run when the house is destroyed
 	self.janitor:Add(function()
 		self.HealthChanged:Destroy()
 		Cache[self.owner] = nil
@@ -44,11 +51,13 @@ function House.new(player, house)
 		self = nil
 	end, true)
 
-	-- Hiding the enemy spawn and end points
+	-- Hide enemy spawn and end points by default
 	self:SetVisibilityForEnemyPoints(1)
 
+	-- Add the house to the cache and workspace
 	Cache[player] = self
 	self.house.Parent = workspace.Houses
+
 	return self
 end
 
@@ -84,11 +93,11 @@ end
 
 -- Function to set visibility for enemy points
 function House:SetVisibilityForEnemyPoints(transparency)
-	for _, point in pairs(self.house.EnemySpawnPoints:GetChildren()) do
+	for _, point in (self.house.EnemySpawnPoints:GetChildren()) do
 		point.Transparency = transparency
 	end
 
-	for _, point in pairs(self.house.EnemyEndPoints:GetChildren()) do
+	for _, point in (self.house.EnemyEndPoints:GetChildren()) do
 		point.Transparency = transparency
 	end
 end
@@ -105,9 +114,13 @@ end
 
 -- Function to damage the house
 function House:Damage(amount)
-	self.health -= amount
+	-- Decrease the house's health
+	self.health = math.max(self.health - amount, 0)
+
+	-- Fire health changed event
 	self.HealthChanged:Fire()
 
+	-- Destroy the house if health drops to zero
 	if self.health <= 0 then
 		self:Destroy()
 	end

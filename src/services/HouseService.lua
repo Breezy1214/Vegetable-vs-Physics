@@ -21,7 +21,7 @@ local HouseService = Knit.CreateService({
 
 -- Function to initialize HouseService
 function HouseService:KnitInit()
-	for _, pad in ipairs(housePads) do
+	for _, pad in housePads do
 		pad:SetAttribute("IsOwned", false)
 		self:SetupPurchasePads(pad)
 	end

@@ -13,7 +13,7 @@ local Signal = require(ReplicatedStorage.Packages.signal)
 
 -- Constants
 local ENEMY_SPEED = 20
-local START_COINS = 1000000
+local START_COINS = 99
 
 -- Player to wave instance mapping
 local PlayerWaves = {}
@@ -204,7 +204,8 @@ function Wave:SpawnEnemies(speed, health)
 				break
 			end
 
-			local enemy = Enemy.new(self.house, ServerStorage.Enemies.Vegetable:Clone(), speed, health)
+			local enemyModel = ServerStorage.Enemies.Vegetable:Clone()
+			local enemy = Enemy.new(self.house, enemyModel, speed, health)
 			enemy.model.Name = tostring(i)
 			enemy:Spawn()
 			self.enemiesAlive += 1
@@ -226,6 +227,7 @@ function Wave:SpawnEnemies(speed, health)
 				if enemy == nil or enemy.destroyed == true then
 					return
 				end
+				task.wait(1)
 				enemy:Move()
 			end
 
@@ -238,7 +240,9 @@ function Wave:SpawnEnemies(speed, health)
 			break
 		end
 
-		task.wait(5)
+		-- Random delay between 1 and 5 seconds
+		local delayTime = math.random(1, 5)
+		task.wait(delayTime)
 	end
 
 	self.waveLock = false

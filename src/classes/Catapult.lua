@@ -1,83 +1,98 @@
+-- Importing Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
-local Catapult = {}
-Catapult.__index = Catapult
+
+-- Importing required modules
 local Janitor = require(ReplicatedStorage.Packages.janitor)
 local Enemy = require(ServerScriptService.Classes.Enemy)
-local catapult = ReplicatedStorage.Assets.Catapult
 
-local part = Instance.new("Part")
-part.Shape = Enum.PartType.Ball
-part.Size = Vector3.new(4, 4, 4)
-part.Material = Enum.Material.CrackedLava
-part.Color = Color3.fromRGB(255, 0, 0)
+-- Defining constants
+local catapultTemplate = ReplicatedStorage.Assets.Catapult
+local PART_SIZE = Vector3.new(4, 4, 4)
+local PART_COLOR = Color3.fromRGB(255, 0, 0)
+local OVERLAP_SIZE = Vector3.new(60, 4, 30)
+local ENEMY_DAMAGE_AMOUNT = 100
 
+-- Catapult Class
+local Catapult = {}
+Catapult.__index = Catapult
+
+-- Catapult Class Constructor
 function Catapult.new(playerName: StringValue, position: Vector3)
 	local self = setmetatable({}, Catapult)
+
 	self.janitor = Janitor.new()
-	self.catapult = self.janitor:Add(catapult:Clone(), "Destroy")
+
+	-- Creating and positioning catapult instance
+	self.catapult = self.janitor:Add(catapultTemplate:Clone(), "Destroy")
 	self.catapult:PivotTo(CFrame.new(position) * CFrame.Angles(0, math.rad(180), 0))
+	self.catapult.Name = playerName .. "Catapult"
+	self.catapult.Parent = workspace
+
 	self.angle = 80
 	self.speed = 5
 	self.hinge = self.catapult.HPart.HingeConstraint
 	self.hinge.AngularSpeed = self.speed
-	self.catapult.Name = playerName .. "Catapult"
-	self.catapult.Parent = workspace
 
+	-- Clean up function to run when the Catapult is destroyed
 	self.janitor:Add(function()
 		setmetatable(self, nil)
-		table.clear(self)
 		self = nil
 	end, true)
 
 	return self
 end
 
+-- Creates a new part for the catapult to fire
+local function createPart()
+	local part = Instance.new("Part")
+	part.Shape = Enum.PartType.Ball
+	part.Size = PART_SIZE
+	part.Material = Enum.Material.CrackedLava
+	part.Color = PART_COLOR
+
+	return part
+end
+
+-- Damages enemies hit by the catapult
 function Catapult:DamageEnemy(newPart)
 	local overlapParams = OverlapParams.new()
-	overlapParams.CollisionGroup = 'Enemies'
-	local size = Vector3.new(60, 4, 30)
+	overlapParams.CollisionGroup = "Enemies"
+
 	local cframe = CFrame.new(newPart.CFrame.Position)
-	local enemiesArray = workspace:GetPartBoundsInBox(cframe, size, overlapParams)
+	local hitParts = workspace:GetPartBoundsInBox(cframe, OVERLAP_SIZE, overlapParams)
 
-	-- local hitbox = Instance.new("Part")
-	-- hitbox.Size = size
-	-- hitbox.CFrame = cframe
-	-- hitbox.CanCollide = false
-	-- hitbox.CanQuery = false
-	-- hitbox.Transparency = 0.5
-	-- hitbox.Anchored = true
-	-- hitbox.Parent = workspace
-	-- task.delay(2, function()
-	-- 	hitbox:Destroy()
-	-- end)
-
-	for _, v in enemiesArray do
-		local enemy = Enemy.GetEnemyFromPart(v)
-		if not enemy then
-			continue
+	for _, part in (hitParts) do
+		local enemy = Enemy.GetEnemyFromPart(part)
+		if enemy then
+			enemy:TakeDamage(ENEMY_DAMAGE_AMOUNT)
 		end
-		enemy:TakeDamage(100)
 	end
 end
 
+-- Fires the catapult
 function Catapult:Fire()
-	local newPart = part:Clone()
+	local newPart = createPart()
 	newPart.Position = self.catapult.Teleport.Position
 	newPart.Name = "Ammo"
 	newPart.Parent = self.catapult
+
 	task.wait(1)
-	self.hinge.TargetAngle = self.angle * -1
+	self.hinge.TargetAngle = -self.angle
+
 	task.wait(2)
 	newPart.Anchored = true
 	self:DamageEnemy(newPart)
 	newPart:Destroy()
+
 	self.hinge.AngularSpeed = 1
 	self.hinge.TargetAngle = 0
 	self.hinge.AngularSpeed = self.speed
+
 	task.wait(2)
 end
 
+-- Destroys the catapult
 function Catapult:Destroy()
 	self.janitor:Destroy()
 end

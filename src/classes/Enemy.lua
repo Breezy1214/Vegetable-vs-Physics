@@ -1,58 +1,68 @@
 -- Import services
-local PathfindingService = game:GetService("PathfindingService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local ServerScriptService = game:GetService("ServerScriptService")
 local TweenService = game:GetService("TweenService")
-local modelToEnemyMap = {}
 
 -- Import external modules
-local janitor = require(ReplicatedStorage.Packages.janitor)
+local Janitor = require(ReplicatedStorage.Packages.janitor)
 local Signal = require(ReplicatedStorage.Packages.signal)
 
--- Define enemy module
+-- Setup Remote Events
+local moveEnemyEvent = Instance.new("RemoteEvent", ReplicatedStorage.Remotes)
+moveEnemyEvent.Name = "MoveEnemyEvent"
+
+local damageHouseEvent = Instance.new("RemoteEvent", ReplicatedStorage.Remotes)
+damageHouseEvent.Name = "DamageHouseEvent"
+
+-- Enemy Module
 local Enemy = {}
 Enemy.__index = Enemy
 
--- Function to perform a fast lookup in the modelToEnemyMap.
+-- Map for quick model to enemy lookup
+local modelToEnemyMap = {}
+
+-- Fetch enemy instance from given part
 function Enemy.GetEnemyFromPart(part)
-	return modelToEnemyMap[part.Parent]
+	if part then
+		return modelToEnemyMap[part.Parent]
+	end
 end
 
--- Enemy constructor
-function Enemy.new(house: ObjectValue, model: Model, speed: IntValue, health: IntValue, isBoss: boolean)
+-- Initialize new enemy instance
+function Enemy.new(house, model, speed, health, isBoss)
+	-- Instantiate enemy
 	local self = setmetatable({}, Enemy)
 
-	-- Initialize enemy properties
+	-- Assign properties
+	self.target = house
 	self.model = model
 	self.speed = speed
 	self.maxHealth = health
 	self.health = self.maxHealth
 	self.isBoss = isBoss or false
-	self.janitor = janitor.new()
-	self.owner = house.owner
-	self.target = house
+	self.janitor = Janitor.new()
 	self.shouldDamageHouse = false
-	self.HealthChanged = Signal.new()
-	self.moving = false
-	self.destroyed = false
 
-	-- Creating a health bar with BillboardGui
+	-- Setup flags
+	self.destroyed = false
+	self.moving = false
+
+	-- Setup health change signal
+	self.healthChanged = Signal.new()
+
+	-- Create health bar
 	self:CreateHealthBar()
 
-	-- Add cleanup function
+	-- Register cleanup task
 	self.janitor:Add(function()
 		self.destroyed = true
-		self.HealthChanged:Destroy()
+		self.healthChanged:Destroy()
 		self.model:Destroy()
-		self.shouldDamageHouse = false -- Stop damage coroutine
 		modelToEnemyMap[self.model] = nil
-		setmetatable(self, nil)
-		table.clear(self)
-		self = nil
 	end, true)
 
+	-- Register enemy
 	modelToEnemyMap[self.model] = self
+
 	return self
 end
 
@@ -80,7 +90,7 @@ function Enemy:CreateHealthBar()
 
 	self.frame = healthFrame
 
-	self.HealthChanged:Connect(function()
+	self.healthChanged:Connect(function()
 		self:UpdateHealthGui()
 	end)
 
@@ -111,7 +121,7 @@ function Enemy:TakeDamage(damage)
 	end
 
 	self.health -= damage
-	self.HealthChanged:Fire()
+	self.healthChanged:Fire()
 	if self.health <= 0 then
 		self:Destroy()
 	end
@@ -120,43 +130,43 @@ end
 -- Coroutine to damage the house every 3 seconds while the enemy is alive
 function Enemy:DamageHouse()
 	self.shouldDamageHouse = true
+	self.moving = false
+
 	task.defer(function()
 		while self and self.shouldDamageHouse and self.health > 0 do
-			self.target:Damage(1)
+			if self.destroyed == false then
+				self.target:Damage(1)
+			end
 			task.wait(3)
 		end
 	end)
 end
 
+-- Attach server events
+damageHouseEvent.OnServerEvent:Connect(function(player, model)
+	if model == nil then
+		return
+	end
+
+	local enemy = Enemy.GetEnemyFromPart(model.PrimaryPart)
+	if enemy then
+		enemy:DamageHouse()
+	end
+end)
+
+moveEnemyEvent.OnServerEvent:Connect(function(player, model, position)
+	if model.PrimaryPart then
+		model.PrimaryPart.Position = position
+	end
+end)
+
 -- Function to move the enemy towards the end point using a tween
 function Enemy:Move()
-	local targetPosition = Vector3.new(
-		self.target.house.EnemyEndPoints[self.model.Name].Position.X,
-		self.model.PrimaryPart.Size.Y / 2,
-		self.target.house.EnemyEndPoints[self.model.Name].Position.Z
-	)
-	local tween = TweenService:Create(
-		self.model.PrimaryPart,
-		TweenInfo.new(self.speed, Enum.EasingStyle.Linear),
-		{ Position = targetPosition }
-	)
-	self.janitor:Add(tween, "Destroy", "CurrentTween")
+	local endPosition = self.target.house.EnemyEndPoints[self.model.Name].Position
+	local targetPosition = Vector3.new(endPosition.X, self.model.PrimaryPart.Position.Y, endPosition.Z)
 
-	-- Connection to respond to the completion of the tween and start damaging the house
-	self.janitor:Add(
-		tween.Completed:Connect(function(state)
-			if state ~= Enum.PlaybackState.Completed then
-				return
-			end
-
-			self.moving = false
-			self:DamageHouse()
-		end),
-		"Disconnect"
-	)
-
+	moveEnemyEvent:FireAllClients(self.model, targetPosition, self.speed)
 	self.moving = true
-	tween:Play()
 end
 
 -- Function to destroy the enemy and clean up connections

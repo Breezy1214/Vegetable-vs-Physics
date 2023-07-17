@@ -1,14 +1,20 @@
+-- Importing Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+
+-- Importing required modules
 local Janitor = require(ReplicatedStorage.Packages.janitor)
 local Enemy = require(ServerScriptService.Classes.Enemy)
 
+-- Boulder Class
 local Boulder = {}
 Boulder.__index = Boulder
 
+-- Boulder Class Constructor
 function Boulder.new(position: Vector3)
 	local self = setmetatable({}, Boulder)
 
+	-- Initializing Boulder part
 	self.part = Instance.new("Part")
 	self.part.CollisionGroup = "Weapons"
 	self.part.Shape = Enum.PartType.Ball
@@ -22,9 +28,10 @@ function Boulder.new(position: Vector3)
 	self.part.CanCollide = true
 	self.part.Parent = workspace
 	self.part.AssemblyLinearVelocity = Vector3.new(0, 0, 8)
+	self.destroyed = false
+
 	self.janitor = Janitor.new()
 	self.debounce = false
-	self.destroyed = false
 
 	self.janitor:Add(
 		self.part.Destroying:Connect(function()
@@ -39,31 +46,33 @@ function Boulder.new(position: Vector3)
 			self.part:Destroy()
 		end
 		setmetatable(self, nil)
+		table.clear(self)
+		self = nil
 	end)
 
 	return self
 end
 
+-- Begin Listening for Collisions
 function Boulder:StartListeningForCollisions()
 	self.janitor:Add(
 		self.part.Touched:Connect(function(hit)
+			if self.debounce then
+				return
+			end
+
 			local enemy = Enemy.GetEnemyFromPart(hit)
-			if not enemy then
-				return
+			if enemy then
+				self.debounce = true
+				enemy:TakeDamage(50)
+				self:Destroy()
 			end
-
-			if self.debounce == true then
-				return
-			end
-
-			self.debounce = true
-			enemy:TakeDamage(50)
-			self:Destroy()
 		end),
 		"Disconnect"
 	)
 end
 
+-- Destroy the Boulder
 function Boulder:Destroy()
 	self.janitor:Destroy()
 end

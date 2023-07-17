@@ -8,7 +8,7 @@ local WeaponController = Knit.CreateController({ Name = "WeaponController" })
 -- Helper function to create new GUI objects
 local function createGuiObject(type, properties)
 	local newObject = Instance.new(type)
-	for propertyName, value in pairs(properties) do
+	for propertyName, value in properties do
 		newObject[propertyName] = value
 	end
 	return newObject
@@ -105,7 +105,7 @@ end
 function WeaponController:UpdateWeaponList()
 	local WeaponService = Knit.GetService("WeaponService")
 	WeaponService:GetWeaponList():andThen(function(weapons)
-		for weapon, cost in pairs(weapons) do
+		for weapon, cost in weapons do
 			self:AddWeaponButton(WeaponService, weapon, cost)
 		end
 	end)
