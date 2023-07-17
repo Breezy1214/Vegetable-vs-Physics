@@ -8,7 +8,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Wave = require(ServerScriptService.Classes.Wave)
 local House = require(ServerScriptService.Classes.House)
 
--- Create the GameService with a Janitor instance for automatic cleanup
+-- Create the GameService
 local GameService = Knit.CreateService({
 	Name = "GameService",
 	Client = {},
